@@ -1,20 +1,16 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 from app.models.user import User
 from app.schemas.user import UserCreate, UserResponse
 from app.core.database import get_db
+from app.api.services.user_service import UserService
 
-router = APIRouter()
+router = APIRouter(prefix="/api/v1/users", tags=["Users"])
 
-@router.post("/users/", response_model=UserResponse, status_code=status.HTTP_201_CREATED)
+@router.post("/users/", response_model=UserResponse)
 def create_user(user_req: UserCreate, db: Session = Depends(get_db)):
-    # Check if the user already exists
-    db_user = db.query(User).filter(User.email == user_req.email).first()
-    if db_user:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Email already registered")
-    # Create a new user
-    new_user = User(name=user_req.name, email=user_req.email)
-    db.add(new_user)
-    db.commit()
-    db.refresh(new_user)
-    return new_user
+    return UserService.create_user(db=db, user_data=user_req)
+
+@router.get("/users/{email}", response_model=UserResponse)
+def get_user(email: str, db: Session = Depends(get_db)):
+    return UserService.get_user_by_email(db=db, email=email)
