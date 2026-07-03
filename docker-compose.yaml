@@ -1,16 +1,35 @@
 services:
   postgres-db:
     image: postgres:15-alpine
-    container_name: my_firstapi_app_postgres_db
+    container_name: my_fastapi_app_postgres_db
     restart: always
     environment:
-      POSTGRES_USER: my_firstapi_pg_user
-      POSTGRES_PASSWORD: my_firstapi_pg_password
-      POSTGRES_DB: my_firstapi_pg_db
+      POSTGRES_USER: my_fastapi_pg_user
+      POSTGRES_PASSWORD: my_fastapi_pg_password
+      POSTGRES_DB: my_fastapi_pg_db
     ports:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
+
+  web:
+    build: .
+    container_name: my_fastapi_app_web
+    env_file:
+      - .env
+    environment:
+      - DATABASE_HOST=postgres-db
+      - DATABASE_PORT=5432
+      # - DATABASE_USER=${DATABASE_USER}
+      # - DATABASE_PASSWORD=${DATABASE_PASSWORD}
+      # - DATABASE_NAME=${DATABASE_NAME}
+    ports:
+      - "8000:8000"
+    volumes:
+      - .:/app
+    depends_on:
+      - postgres-db
+    restart: always
 
 volumes:
   postgres_data:
