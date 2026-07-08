@@ -41,23 +41,26 @@ services:
       - app-network
 
 
-  # --- FastAPI Application ---
-  web:
-    build: .
-    container_name: my_fastapi_app_web
+  # --- Core API ---
+  core_api:
+    build:
+      context: ./core_api
+      dockerfile: Dockerfile
+    container_name: talent_hunt_core_api
     env_file:
-      - .env
+      - ./core_api/.env
     environment:
       - DATABASE_HOST=postgres-db
       - DATABASE_PORT=5432
       # - DATABASE_USER=${DATABASE_USER}
       # - DATABASE_PASSWORD=${DATABASE_PASSWORD}
       # - DATABASE_NAME=${DATABASE_NAME}
+      - KAFKA_BOOTSTRAP_SERVERS=kafka:29092
     ports:
       - "8000:8000"
     volumes:
-      - .:/app
-      - ./media:/app/media
+      - ./core_api:/app
+      - ./core_api/media:/app/media
     depends_on:
       - postgres-db
       - my_fastapi_app_redis
@@ -66,6 +69,26 @@ services:
     networks:
       - app-network
 
+  # --- AI Worker ---
+  ai_worker:
+    build:
+      context: ./ai_worker
+      dockerfile: Dockerfile
+    container_name: talent_hunt_ai_worker
+    env_file:
+      - ./ai_worker/.env
+    environment:
+      - KAFKA_BOOTSTRAP_SERVERS=kafka:29092
+    volumes:
+      - ./ai_worker:/app
+      - ./core_api/media:/app/media # Volume mount to share media files between Core API and AI Worker
+    depends_on:
+      - kafka
+      - core_api
+    restart: always
+    networks:
+      - app-network
+  
 
   # --- Apache Kafka (KRaft Mode) ---
   kafka:
@@ -111,6 +134,8 @@ services:
       KAFKA_CLUSTERS_0_NAME: 'enterprise-cluster'
       KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: 'kafka:29092'
       # KAFKA_CLUSTERS_0_METRICS_PORT: 9101  # only if want to monitor Kafka metrics in Kafka UI
+      LOGGING_LEVEL_ROOT: ERROR
+      LOGGING_LEVEL_COM_PROVECTUS_KAFKA_UI: ERROR
     networks:
       - app-network
     depends_on:

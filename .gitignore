@@ -216,3 +216,25 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+
+# ==========================================
+# Talent Hunt Monorepo & Docker Specific
+# ==========================================
+
+# Ignore uploaded user CVs and images in local development
+core_api/media/
+**/media/
+
+# Ignore local environment files inside services
+core_api/.env
+ai_worker/.env
+
+# Ignore Docker named volumes or local DB dumps if created in root
+postgres_data/
+kafka_data/
+redis_insight_data/
+
+# OS specific hidden files
+.DS_Store
+Thumbs.db
