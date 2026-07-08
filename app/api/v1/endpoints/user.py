@@ -31,7 +31,7 @@ def get_user(request: Request, email: str, db: Session = Depends(get_db)):
 # URL: /api/v1/users/{user_id}/upload-docs
 @router.post("/{user_id}/upload-docs")
 async def upload_user_documents(user_id: int, profile_image: UploadFile = File(None), cv_file: UploadFile = File(None), db: Session = Depends(get_db)):
-    return UserService.upload_documents(db=db, user_id=user_id, profile_image=profile_image, cv_file=cv_file)
+    return await UserService.upload_documents(db=db, user_id=user_id, profile_image=profile_image, cv_file=cv_file)
 
 # URL: /api/v1/users/me
 @router.put("/me")

@@ -8,6 +8,8 @@ class Settings(BaseSettings):
     DATABASE_PORT: int = 5432
     DATABASE_NAME: str
 
+    KAFKA_BOOTSTRAP_SERVERS: str = "kafka:29092"  # Default Kafka bootstrap servers
+
     # Using computed_field to dynamically create DATABASE_URL
     @computed_field
     @property

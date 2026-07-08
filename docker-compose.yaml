@@ -61,6 +61,7 @@ services:
     depends_on:
       - postgres-db
       - my_fastapi_app_redis
+      - kafka
     restart: always
     networks:
       - app-network
@@ -109,7 +110,7 @@ services:
     environment:
       KAFKA_CLUSTERS_0_NAME: 'enterprise-cluster'
       KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: 'kafka:29092'
-      KAFKA_CLUSTERS_0_METRICS_PORT: 9101
+      # KAFKA_CLUSTERS_0_METRICS_PORT: 9101  # only if want to monitor Kafka metrics in Kafka UI
     networks:
       - app-network
     depends_on:

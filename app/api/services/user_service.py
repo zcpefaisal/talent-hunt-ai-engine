@@ -1,10 +1,15 @@
 import os
 import shutil
+import logging
 from sqlalchemy.orm import Session, joinedload
 from app.models.user import User, UserProfile
 from app.schemas.user import UserCreate, UserUpdate
 from app.core.security import get_password_hash, verify_password
 from fastapi import UploadFile, HTTPException, status
+from app.core.config import settings
+from app.core.kafka_producer import kafka_manager
+
+logger = logging.getLogger(__name__)
 
 UPLOAD_DIR = "media"
 
@@ -38,6 +43,7 @@ class UserService:
             return new_user
         except Exception as e:
             db.rollback()
+            logger.error(f"Error creating user profile: {str(e)}")
             raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Error creating user profile: {str(e)}")
 
     @staticmethod
@@ -54,7 +60,7 @@ class UserService:
 
 
     @staticmethod
-    def upload_documents(db: Session, user_id: int, profile_image: UploadFile = None, cv_file: UploadFile = None):
+    async def upload_documents(db: Session, user_id: int, profile_image: UploadFile = None, cv_file: UploadFile = None):
         # First check if this user's profile is in the database.
         profile = db.query(UserProfile).filter(UserProfile.user_id == user_id).first()
         if not profile:
@@ -85,10 +91,23 @@ class UserService:
                 shutil.copyfileobj(cv_file.file, buffer)
             
             profile.cv_url = cv_path
+        
+        
 
         # Update the database with the new file paths
         db.commit()
         db.refresh(profile)
+
+        if cv_file:
+            event_payload = {
+                "event_type": "CV_UPLOADED",
+                "cv_id": profile.id,
+                "file_name": cv_file.filename,
+                "file_path": cv_path,
+                "status": "PENDING_PROCESSING"
+            }
+            logger.info(f"Sending event to Kafka: {event_payload}")
+            await kafka_manager.send_message(topic="cv_upload", message=event_payload)
         
         return {
             "message": "Documents uploaded successfully", 
